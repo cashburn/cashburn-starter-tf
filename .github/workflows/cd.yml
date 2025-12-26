@@ -41,7 +41,6 @@ jobs:
     name: ${{inputs.env}} - Plan
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
     uses: ./.github/workflows/tf-plan-template.yml
-    needs: check_ci_success
     with:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
@@ -53,3 +52,17 @@ jobs:
     uses: ./.github/workflows/tf-apply-template.yml
     with:
       env: ${{ inputs.env }}
+
+  dev-plan:
+    name: Dev - Plan
+    uses: ./.github/workflows/tf-plan-template.yml
+    needs: check_ci_success
+    with:
+      env: dev
+
+  dev-apply:
+    name: Dev - Apply
+    needs: dev-plan
+    uses: ./.github/workflows/tf-apply-template.yml
+    with:
+      env: dev

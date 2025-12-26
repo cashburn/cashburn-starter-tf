@@ -42,8 +42,12 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
    2. `env` - The environment name
    3. `location` - The Azure region to use
 
+# GitHub 
+
 # Todos
-1. Add starter project
-2. Add documentation
-3. Add shell script
-4. Add branch policies/rulesets
+1. Add starter project with CI/CD workflows
+2. Add CI trigger in addition to workflow_dispatch
+3. Add documentation for how to deploy
+4. Add shell script in addition to pwsh
+5. Add branch policies/rulesets
+   1. Add this as a separate repo, with a GH Actions workflow (triggered on push to /github folder) to auto update settings

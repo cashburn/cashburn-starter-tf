@@ -18,7 +18,7 @@ permissions:
 
 jobs:
   plan:
-    name: Terraform Plan
+    name: Terraform Apply
     runs-on: ubuntu-latest
 
     environment: ${{ inputs.env }}
@@ -55,4 +55,4 @@ jobs:
 
       - name: Terraform Apply
         working-directory: ${{ inputs.terraform_dir }}
-        run: terraform apply tfplan-${{ inputs.env }}
+        run: terraform apply tfplan

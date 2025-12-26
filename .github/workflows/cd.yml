@@ -28,11 +28,12 @@ permissions:
 
 jobs:
   check_ci_success:
+    if: ${{ github.event_name == 'workflow_run' }}
     runs-on: ubuntu-latest
     steps:
       - name: Fail if CI did not succeed
         run: |
-          if [[ "${{ github.event_name == 'workflow_run' && github.event.workflow_run.conclusion }}" != "success" ]]; then
+          if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
             echo "CI workflow did not succeed. Failing CD workflow."
             exit 1
           fi

@@ -24,7 +24,7 @@ permissions:
 jobs:
   plan:
     name: Terraform Plan
-    uses: ./.github/workflows/terraform-plan.yml
+    uses: ./.github/workflows/tf-plan-template.yml
     with:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}

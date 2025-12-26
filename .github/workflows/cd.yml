@@ -1,5 +1,5 @@
 name: CD
-run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env }} by ${{ github.actor }}
+run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env }}
 
 on:
   workflow_dispatch:

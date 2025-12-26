@@ -1,0 +1,58 @@
+name: Terraform Apply
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        description: 'GitHub Environment (dev, test, prod, etc.)'
+        required: true
+        type: string
+      terraform_dir:
+        required: false
+        type: string
+        default: infra
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+
+    environment: ${{ inputs.env }}
+
+    env:
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      ARM_USE_OIDC: 'true'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download tfplan artifact
+        uses: actions/download-artifact@v5
+        with:
+          name: tfplan-${{ inputs.env }}
+          path: ${{ inputs.terraform_dir }}/
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ env.ARM_CLIENT_ID }}
+          tenant-id: ${{ env.ARM_TENANT_ID }}
+          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init -backend-config=env/backend.${{ inputs.env }}.config
+        working-directory: ${{ inputs.terraform_dir }}
+
+      - name: Terraform Apply
+        working-directory: ${{ inputs.terraform_dir }}
+        run: terraform apply tfplan-${{ inputs.env }}

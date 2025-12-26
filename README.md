@@ -27,6 +27,7 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
    ```
    pwsh ./infra/bootstrap-tfstate/setup.ps1 -TfStateResourceGroup cashburn-starter-tf-tfstate-npd -AppName cashburn-starter-tf-npd -Location centralus -StorageAccountName cashburnstartertfnpd -GitHubOrg cashburn -GitHubRepo cashburn-starter-tf -Envs dev,test
    ```
+5. The Bootstrap script will output your `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`. You will add these later in GitHub.
 
 ## Configure Terraform configs
 1. Configure `/infra/env/backend.*.config` to the names you want for your project
@@ -42,12 +43,28 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
    2. `env` - The environment name
    3. `location` - The Azure region to use
 
-# GitHub 
+## Setup GitHub Workflows
+1. In GitHub, go to your repository Settings, then under Security, select `Secrets and variables -> Actions`.
+   1. Go to the `Variables` tab
+   2. Under `Repository variables`, add the Azure variables output from the Bootstrap script.
+   The choice was made to use Variables instead of Secrets for these, because we are using OIDC for authenticating between GitHub and Azure, so these are not truly secrets/credentials.
+      1. `AZURE_CLIENT_ID` - App Id of the Entra App/Service Principal
+      2. `AZURE_TENANT_ID` - Entra Id for your Azure Organization/Tenant/Directory
+      3. `AZURE_SUBSCRIPTION_ID` - Azure Subscription Id where your resources will be created
+   The choice was made to use Variables instead of Secrets for these, because we are using OIDC for authenticating between GitHub and Azure, so these are not truly secrets/credentials.
+2. Copy `/.github` folder into your project
+3. On push, GitHub will automatically create CI and CD workflows in GitHub Actions
+
+# Project Structure
+TODO Add Project Structure
+
+# Cleanup
+TODO Add Cleanup Steps
 
 # Todos
 1. Add starter project with CI/CD workflows
 2. Add CI trigger in addition to workflow_dispatch
-3. Add documentation for how to deploy
+3. Add documentation
 4. Add shell script in addition to pwsh
 5. Add branch policies/rulesets
    1. Add this as a separate repo, with a GH Actions workflow (triggered on push to /github folder) to auto update settings

@@ -1,5 +1,5 @@
 name: CD
-run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env }}
+run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env || 'Dev/Test' }}
 
 on:
   workflow_dispatch:
@@ -17,21 +17,38 @@ on:
         required: false
         type: boolean
         default: false
+  workflow_run:
+    workflows: ['CI']
+    types:
+      - completed
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
+  check_ci_success:
+    if: ${{ github.event_name == 'workflow_run' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if CI did not succeed
+        run: |
+          if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
+            echo "CI workflow did not succeed. Failing CD workflow."
+            exit 1
+          fi
   plan:
-    name: Terraform Plan
+    name: ${{inputs.env}} - Plan
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
     uses: ./.github/workflows/tf-plan-template.yml
+    needs: check_ci_success
     with:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
 
   apply:
-    name: Terraform Apply
+    name: ${{inputs.env}} - Apply
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
     needs: plan
     uses: ./.github/workflows/tf-apply-template.yml
     with:

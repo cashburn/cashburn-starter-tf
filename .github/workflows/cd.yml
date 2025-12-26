@@ -66,3 +66,17 @@ jobs:
     uses: ./.github/workflows/tf-apply-template.yml
     with:
       env: dev
+
+  test-plan:
+    name: Test - Plan
+    uses: ./.github/workflows/tf-plan-template.yml
+    needs: check_ci_success
+    with:
+      env: test
+
+  test-apply:
+    name: Test - Apply
+    needs: test-plan
+    uses: ./.github/workflows/tf-apply-template.yml
+    with:
+      env: test

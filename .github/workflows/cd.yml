@@ -1,4 +1,5 @@
 name: CD
+run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env }}
 
 on:
   workflow_dispatch:
@@ -24,90 +25,14 @@ permissions:
 jobs:
   plan:
     name: Terraform Plan
-    runs-on: ubuntu-latest
-
-    environment: ${{ inputs.env }}
-
-    env:
-      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      ARM_USE_OIDC: 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-
-      - name: Verify Azure Context
-        run: |
-          echo "Logged in as:"
-          az account show --output table
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-
-      - name: Terraform Init
-        working-directory: infra
-        run: terraform init -backend-config=env/backend.${{ inputs.env }}.config
-
-      - name: Terraform Plan
-        working-directory: infra
-        run: |
-          if [ "${{ inputs.destroy }}" = "true" ]; then
-            terraform plan -destroy -var-file=env/${{ inputs.env }}.tfvars -out=tfplan
-          else
-            terraform plan -var-file=env/${{ inputs.env }}.tfvars -out=tfplan
-          fi
-
-      - name: Upload tfplan artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: infra/tfplan
+    uses: ./.github/workflows/tf-plan-template.yml
+    with:
+      env: ${{ inputs.env }}
+      destroy: ${{ inputs.destroy }}
 
   apply:
     name: Terraform Apply
     needs: plan
-    runs-on: ubuntu-latest
-
-    environment: ${{ inputs.env }}
-
-    env:
-      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
-      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
-      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
-      ARM_USE_OIDC: 'true'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Download tfplan artifact
-        uses: actions/download-artifact@v5
-        with:
-          name: tfplan
-          path: infra/
-
-      - name: Azure Login (OIDC)
-        uses: azure/login@v2
-        with:
-          client-id: ${{ env.ARM_CLIENT_ID }}
-          tenant-id: ${{ env.ARM_TENANT_ID }}
-          subscription-id: ${{ env.ARM_SUBSCRIPTION_ID }}
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v1
-
-      - name: Terraform Init
-        working-directory: infra
-        run: terraform init -backend-config=env/backend.${{ inputs.env }}.config
-
-      - name: Terraform Apply
-        working-directory: infra
-        run: terraform apply "tfplan"
+    uses: ./.github/workflows/tf-apply-template.yml
+    with:
+      env: ${{ inputs.env }}

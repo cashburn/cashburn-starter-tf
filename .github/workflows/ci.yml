@@ -12,8 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-  test:
+  validate:
+    name: Terraform Validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Running tests..."
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.14.x'
+      - name: Terraform init
+        run: terraform init -backend=false
+      - name: Terraform validate
+        run: terraform validate

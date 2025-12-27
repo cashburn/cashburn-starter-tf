@@ -34,7 +34,7 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
 
 ## Configure Terraform configs
 1. Configure `/infra/env/backend.*.config` to the names you want for your project
-   1. `resource_group_name` - The Azure Resource Group you would like to use for storing the Terraform backend/tfstate in Blob Storage (NOT your application resource group). *The RG should have been created in the `/infra/bootstrap` script.*
+   1. `resource_group_name` - The Azure Resource Group you would like to use for storing the Terraform backend/tfstate in Blob Storage (NOT your application resource group). *The RG should have been created in the `/infra/bootstrap-tfstate/setup.ps1` script.*
    2. `storage_account_name` - The Storage Account you would like to use for storing the tfstate.
    3. `container_name` - The container inside the Storage Account you would like to use for storing the tfstate.
    4. `key` - The full name + environment of your application tfstate fiile, as you would like it to be stored in Azure Blob Storage.
@@ -59,7 +59,7 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
 3. On push, GitHub will automatically create CI and CD workflows in GitHub Actions and deploy to the Dev/Test environments.
 
 ## Setup Prod Configuration
-You typically want Prod to have its own Service Principal, and you can also enforce additional restrictions/policies for the Prod environment (it may also be in a separate Azure Tenant/Subscription).
+You typically want Prod to have its own Service Principal for security reasons, and you can also enforce additional restrictions/policies for the Prod environment in GitHub and Azure (it may also be in a separate Azure Tenant/Subscription).
 1. When you are ready to create your Prod environment, run the Bootstrap script again with your Prod variables:
    
    Ex.
@@ -81,9 +81,12 @@ TODO Add Project Structure
 TODO Add Cleanup Steps
 
 # Todos
-1. Add starter project with CI/CD workflows
-2. Add CI trigger in addition to workflow_dispatch
-3. Add documentation
-4. Add shell script in addition to pwsh
-5. Add branch policies/rulesets
+1. Add CD code deployment
+2. Combine CI/CD?
+3. Combine TF Plan/Apply jobs?
+4. Fix multiple approvals on TF Plan/Apply
+5. Add cleanup steps to docs
+6. Add project structure to docs
+7. Add shell script in addition to pwsh
+8. Add branch policies/rulesets
    1. Add this as a separate repo, with a GH Actions workflow (triggered on push to /github folder) to auto update settings

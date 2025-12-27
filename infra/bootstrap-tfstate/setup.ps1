@@ -11,7 +11,7 @@ param(
     [string]$Location,
 
     [Parameter(Mandatory=$true)]
-    [string]$StorageAccountName,   # Must be globally unique
+    [string]$StorageAccountName,
 
     [Parameter(Mandatory=$true)]
     [string]$GitHubOrg,

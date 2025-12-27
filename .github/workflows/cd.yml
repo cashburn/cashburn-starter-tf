@@ -80,3 +80,17 @@ jobs:
     uses: ./.github/workflows/tf-apply-template.yml
     with:
       env: test
+
+  prod-plan:
+    name: Prod - Plan
+    uses: ./.github/workflows/tf-plan-template.yml
+    needs: check_ci_success
+    with:
+      env: prod
+
+  prod-apply:
+    name: Prod - Apply
+    needs: prod-plan
+    uses: ./.github/workflows/tf-apply-template.yml
+    with:
+      env: prod

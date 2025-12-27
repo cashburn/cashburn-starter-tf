@@ -28,10 +28,13 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
    pwsh ./infra/bootstrap-tfstate/setup.ps1 -TfStateResourceGroup cashburn-starter-tf-tfstate-npd -AppName cashburn-starter-tf-npd -Location centralus -StorageAccountName cashburnstartertfnpd -GitHubOrg cashburn -GitHubRepo cashburn-starter-tf -Envs dev,test
    ```
 5. The Bootstrap script will output your `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, and `AZURE_SUBSCRIPTION_ID`. You will add these later in GitHub.
+6. If you want to create any additional environments later, they will need federated credentials created in Azure. You can create these one at a time by running the `setup-env.ps1` script:
+   1. The only new variable is: `AppId` - The `AZURE_CLIENT_ID` created in the bootstrap script
+   2. Ex. `pwsh ./infra/bootstrap-tfstate/setup-env.ps1 -GitHubOrg cashburn -GitHubRepo cashburn-starter-tf -Env stage -AppId YOUR_CLIENT_ID_HERE`
 
 ## Configure Terraform configs
 1. Configure `/infra/env/backend.*.config` to the names you want for your project
-   1. `resource_group_name` - The Azure Resource Group you would like to use for storing the Terraform backend/tfstate in Blob Storage (NOT your application resource group). *The RG will be created in the `/infra/bootstrap` script.*
+   1. `resource_group_name` - The Azure Resource Group you would like to use for storing the Terraform backend/tfstate in Blob Storage (NOT your application resource group). *The RG should have been created in the `/infra/bootstrap` script.*
    2. `storage_account_name` - The Storage Account you would like to use for storing the tfstate.
    3. `container_name` - The container inside the Storage Account you would like to use for storing the tfstate.
    4. `key` - The full name + environment of your application tfstate fiile, as you would like it to be stored in Azure Blob Storage.
@@ -48,12 +51,28 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
    1. Go to the `Variables` tab
    2. Under `Repository variables`, add the Azure variables output from the Bootstrap script.
    The choice was made to use Variables instead of Secrets for these, because we are using OIDC for authenticating between GitHub and Azure, so these are not truly secrets/credentials.
-      1. `AZURE_CLIENT_ID` - App Id of the Entra App/Service Principal
+      1. `AZURE_CLIENT_ID` - App Id of the Non-Prod Entra App/Service Principal
       2. `AZURE_TENANT_ID` - Entra Id for your Azure Organization/Tenant/Directory
       3. `AZURE_SUBSCRIPTION_ID` - Azure Subscription Id where your resources will be created
    The choice was made to use Variables instead of Secrets for these, because we are using OIDC for authenticating between GitHub and Azure, so these are not truly secrets/credentials.
 2. Copy `/.github` folder into your project
-3. On push, GitHub will automatically create CI and CD workflows in GitHub Actions
+3. On push, GitHub will automatically create CI and CD workflows in GitHub Actions and deploy to the Dev/Test environments.
+
+## Setup Prod Configuration
+You typically want Prod to have its own Service Principal, and you can also enforce additional restrictions/policies for the Prod environment (it may also be in a separate Azure Tenant/Subscription).
+1. When you are ready to create your Prod environment, run the Bootstrap script again with your Prod variables:
+   
+   Ex.
+   ```
+   pwsh ./infra/bootstrap-tfstate/setup.ps1 -TfStateResourceGroup cashburn-starter-tf-tfstate-prod -AppName cashburn-starter-tf-prod -Location centralus -StorageAccountName cashburnstartertfprod -GitHubOrg cashburn -GitHubRepo cashburn-starter-tf -Envs prod
+   ```
+2. Note down your Prod `AZURE_CLIENT_ID`, as you will add it in GitHub as an Environment Variable. (If you used a separate Tenant or Subscription for Prod, note those down as well.)
+   1. In GitHub, go to your repository Settings, then under `Code and automation`, select `Environments`.
+   2. Select `New environment` and enter `prod`
+   3. Add any required reviewers (you should probably require an approval to deploy to Prod)
+   4. Under `Environment variables`, Add an environment variable:
+      1. `AZURE_CLIENT_ID` - App Id of the Prod Entra App/Service Principal
+      2. If you used a separate Tenant or Subscription for Prod, add `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` as well
 
 # Project Structure
 TODO Add Project Structure

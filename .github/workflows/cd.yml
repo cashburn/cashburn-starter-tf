@@ -1,5 +1,5 @@
 name: CD
-run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env || 'Dev/Test' }}
+run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env || 'Dev/Test/Prod' }}
 
 on:
   workflow_dispatch:
@@ -37,60 +37,31 @@ jobs:
             echo "CI workflow did not succeed. Failing CD workflow."
             exit 1
           fi
-  plan:
-    name: ${{inputs.env}} - Plan
+  deploy:
+    name: ${{inputs.env}} - Deploy
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
-    uses: ./.github/workflows/tf-plan-template.yml
+    uses: ./.github/workflows/tf-deploy-template.yml
     with:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
 
-  apply:
-    name: ${{inputs.env}} - Apply
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
-    needs: plan
-    uses: ./.github/workflows/tf-apply-template.yml
-    with:
-      env: ${{ inputs.env }}
-
-  dev-plan:
-    name: Dev - Plan
-    uses: ./.github/workflows/tf-plan-template.yml
+  dev-tf:
+    name: Dev - TF Deploy
     needs: check_ci_success
+    uses: ./.github/workflows/tf-deploy-template.yml
     with:
       env: dev
 
-  dev-apply:
-    name: Dev - Apply
-    needs: dev-plan
-    uses: ./.github/workflows/tf-apply-template.yml
-    with:
-      env: dev
-
-  test-plan:
-    name: Test - Plan
-    uses: ./.github/workflows/tf-plan-template.yml
-    needs: check_ci_success
+  test-tf:
+    name: Test - TF Deploy
+    needs: dev-tf
+    uses: ./.github/workflows/tf-deploy-template.yml
     with:
       env: test
 
-  test-apply:
-    name: Test - Apply
-    needs: test-plan
-    uses: ./.github/workflows/tf-apply-template.yml
-    with:
-      env: test
-
-  prod-plan:
-    name: Prod - Plan
-    uses: ./.github/workflows/tf-plan-template.yml
-    needs: check_ci_success
-    with:
-      env: prod
-
-  prod-apply:
-    name: Prod - Apply
-    needs: prod-plan
-    uses: ./.github/workflows/tf-apply-template.yml
+  prod-tf:
+    name: Prod - TF Deploy
+    needs: test-tf
+    uses: ./.github/workflows/tf-deploy-template.yml
     with:
       env: prod

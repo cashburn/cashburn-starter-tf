@@ -17,7 +17,7 @@ on:
         required: false
         type: choice
         options:
-          - ''
+          - '' # If no env selected, run full CI/CD workflow/deploy to all envs
           - dev
           - test
           - prod
@@ -32,7 +32,29 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Replace this with actual unit test steps
+      - name: Run Unit Tests
+        run: echo "Running unit tests..."
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Replace this with actual build steps
+      - name: Build Application
+        run: echo "Building application..."
+
+  tf-validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
     steps:
@@ -52,44 +74,53 @@ jobs:
         run: terraform fmt -check -recursive
         working-directory: infra
 
-  # Deploy/Destroy on workflow_dispatch to selected environment only
-  deploy:
-    name: Deploy ${{inputs.env}}
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
-    needs: [validate]
-    uses: ./.github/workflows/deploy-template.yml
-    with:
-      env: ${{ inputs.env }}
-      destroy: ${{ inputs.destroy }}
-
-  # CI/CD Deployment is triggered if all validations pass and it is a push to main or a manual dispatch with no environment
+  # Check if all validations have passed
   gate:
     name: Deployment Gate
-    needs: [validate]
+    needs: [tf-validate, build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Gate
+        run: echo "Deployment gate passed."
+
+  # Full CI/CD Deployment is triggered if it is CI trigger (main branch) or a manual dispatch for all envs (no env selected)
+  cd-gate:
+    name: CD (all envs)
+    needs: [gate]
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.env == '') }}
     runs-on: ubuntu-latest
     steps:
       - name: Deployment Gate
         run: echo "Deployment gate passed."
 
+  # Deploy/Destroy on workflow_dispatch to selected environment only
+  deploy:
+    name: Deploy ${{inputs.env}}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
+    needs: [gate]
+    uses: ./.github/workflows/deploy-template.yml
+    with:
+      env: ${{ inputs.env }}
+      destroy: ${{ inputs.destroy }}
+
   # Normal CI/CD flow for all environments
   dev-deploy:
     name: Dev - Deploy
-    needs: [gate]
+    needs: [cd-gate]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: dev
 
   test-deploy:
     name: Test - Deploy
-    needs: dev-deploy
+    needs: [dev-deploy]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: test
 
   prod-deploy:
     name: Prod - Deploy
-    needs: test-deploy
+    needs: [test-deploy]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: prod

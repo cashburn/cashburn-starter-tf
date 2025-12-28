@@ -139,10 +139,9 @@ TODO Add Project Structure
 TODO Add Cleanup Steps
 
 # Todos
-1. Add CI Build/Test steps
-2. Try out release flow
-3. Add cleanup steps to docs
-4. Add project structure to docs
-5. Add shell script in addition to pwsh
-6. Add branch policies/rulesets
+1. Try out release flow
+2. Add cleanup steps to docs
+3. Add project structure to docs
+4. Add shell script in addition to pwsh
+5. Add branch policies/rulesets
    1. Add this as a separate repo, with a GH Actions workflow (triggered on push to /github folder) to auto update settings

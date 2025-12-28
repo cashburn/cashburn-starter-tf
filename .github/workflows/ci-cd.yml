@@ -14,7 +14,7 @@ on:
     inputs:
       env:
         description: 'Environment (dev, test, prod)'
-        required: true
+        required: false
         type: choice
         options:
           - dev

@@ -1,5 +1,5 @@
 name: CI/CD
-run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env || 'Dev/Test/Prod' }}
+run-name: ${{(github.event_name == 'pull_request' && 'Build/Validate') || (inputs.destroy && 'Destroy') || 'Deploy' }}${{ (github.event_name == 'pull_request' && '') || format(' - {0}', inputs.env) || ' - Dev/Test/Prod' }}
 
 on:
   push:
@@ -43,10 +43,11 @@ jobs:
         run: terraform validate
         working-directory: infra
       - name: Terraform fmt check
-        if: github.event_name == 'pull_request'
+        if: ${{ github.event_name == 'pull_request' }}
         run: terraform fmt -check -recursive
         working-directory: infra
 
+  # Deployment is skipped for PR triggers or if validation fails
   gate:
     name: Deployment Gate
     needs: [validate]
@@ -56,15 +57,17 @@ jobs:
       - name: Deployment Gate
         run: echo "Deployment gate passed."
 
+  # Deploy/Destroy on workflow_dispatch to selected environment only
   deploy:
     name: ${{inputs.env}} - Deploy
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
-    needs: [validate]
+    needs: [gate]
     uses: ./.github/workflows/tf-deploy-template.yml
     with:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
 
+  # Normal CI/CD flow for all environments
   dev-tf:
     name: Dev - TF Deploy
     needs: [gate]

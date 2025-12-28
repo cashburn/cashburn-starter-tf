@@ -73,21 +73,21 @@ jobs:
 
   # Normal CI/CD flow for all environments
   dev-deploy:
-    name: Dev - TF Deploy
+    name: Dev - Deploy
     needs: [gate]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: dev
 
   test-deploy:
-    name: Test - TF Deploy
+    name: Test - Deploy
     needs: dev-deploy
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: test
 
   prod-deploy:
-    name: Prod - TF Deploy
+    name: Prod - Deploy
     needs: test-deploy
     uses: ./.github/workflows/deploy-template.yml
     with:

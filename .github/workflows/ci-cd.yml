@@ -56,7 +56,7 @@ jobs:
     name: ${{inputs.env}} - Deploy
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
     needs: [validate]
-    uses: ./.github/workflows/tf-deploy-template.yml
+    uses: ./.github/workflows/deploy-template.yml
     with:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
@@ -72,23 +72,23 @@ jobs:
         run: echo "Deployment gate passed."
 
   # Normal CI/CD flow for all environments
-  dev-tf:
+  dev-deploy:
     name: Dev - TF Deploy
     needs: [gate]
-    uses: ./.github/workflows/tf-deploy-template.yml
+    uses: ./.github/workflows/deploy-template.yml
     with:
       env: dev
 
-  test-tf:
+  test-deploy:
     name: Test - TF Deploy
-    needs: dev-tf
-    uses: ./.github/workflows/tf-deploy-template.yml
+    needs: dev-deploy
+    uses: ./.github/workflows/deploy-template.yml
     with:
       env: test
 
-  prod-tf:
+  prod-deploy:
     name: Prod - TF Deploy
-    needs: test-tf
-    uses: ./.github/workflows/tf-deploy-template.yml
+    needs: test-deploy
+    uses: ./.github/workflows/deploy-template.yml
     with:
       env: prod

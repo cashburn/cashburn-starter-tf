@@ -74,7 +74,7 @@ jobs:
         run: terraform fmt -check -recursive
         working-directory: infra
 
-  # CI/CD Deployment is triggered if all validations pass and it is CI trigger or a manual dispatch for all envs (no env selected)
+  # Check if all validations have passed
   gate:
     name: Deployment Gate
     needs: [tf-validate, build, test]
@@ -83,8 +83,9 @@ jobs:
       - name: Deployment Gate
         run: echo "Deployment gate passed."
 
+  # Full CI/CD Deployment is triggered if it is CI trigger (main branch) or a manual dispatch for all envs (no env selected)
   cd-gate:
-    name: CD Gate (full CD deploy to all envs)
+    name: CD (all envs)
     needs: [gate]
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.env == '') }}
     runs-on: ubuntu-latest

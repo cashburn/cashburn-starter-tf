@@ -1,7 +1,11 @@
-name: CD
+name: CI/CD
 run-name: ${{inputs.destroy && 'Destroy' || 'Deploy to' }} ${{ inputs.env || 'Dev/Test/Prod' }}
 
 on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
   workflow_dispatch:
     inputs:
       env:
@@ -17,29 +21,42 @@ on:
         required: false
         type: boolean
         default: false
-  workflow_run:
-    workflows: ['CI']
-    types:
-      - completed
 
 permissions:
   id-token: write
   contents: read
 
 jobs:
-  check_ci_success:
-    if: ${{ github.event_name == 'workflow_run' }}
+  validate:
+    name: Terraform Validate
     runs-on: ubuntu-latest
     steps:
-      - name: Fail if CI did not succeed
-        run: |
-          if [[ "${{ github.event.workflow_run.conclusion }}" != "success" ]]; then
-            echo "CI workflow did not succeed. Failing CD workflow."
-            exit 1
-          fi
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.14.x'
+      - name: Terraform init
+        run: terraform init -backend=false
+        working-directory: infra
+      - name: Terraform validate
+        run: terraform validate
+        working-directory: infra
+      - name: Terraform fmt check
+        if: github.event_name == 'pull_request'
+        run: terraform fmt -check -recursive
+        working-directory: infra
+
+  gate:
+    name: Deployment Gate
+    needs: [validate]
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+
   deploy:
     name: ${{inputs.env}} - Deploy
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
+    needs: [validate]
     uses: ./.github/workflows/tf-deploy-template.yml
     with:
       env: ${{ inputs.env }}
@@ -47,7 +64,7 @@ jobs:
 
   dev-tf:
     name: Dev - TF Deploy
-    needs: check_ci_success
+    needs: [gate]
     uses: ./.github/workflows/tf-deploy-template.yml
     with:
       env: dev

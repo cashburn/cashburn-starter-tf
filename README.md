@@ -82,11 +82,12 @@ TODO Add Cleanup Steps
 
 # Todos
 1. Add CD code deployment
-2. Combine CI/CD?
-3. Combine TF Plan/Apply jobs?
-4. Fix multiple approvals on TF Plan/Apply
-5. Add cleanup steps to docs
-6. Add project structure to docs
-7. Add shell script in addition to pwsh
-8. Add branch policies/rulesets
+2. Try out release flow
+3. Combine CI/CD?
+4. Combine TF Plan/Apply jobs?
+5. Fix multiple approvals on TF Plan/Apply
+6. Add cleanup steps to docs
+7. Add project structure to docs
+8. Add shell script in addition to pwsh
+9. Add branch policies/rulesets
    1. Add this as a separate repo, with a GH Actions workflow (triggered on push to /github folder) to auto update settings

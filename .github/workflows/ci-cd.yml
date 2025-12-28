@@ -1,0 +1,90 @@
+name: CI/CD
+run-name: ${{(github.event_name == 'pull_request' && 'Build/Validate') || (inputs.destroy && 'Destroy') || 'Deploy' }}${{ github.event_name != 'pull_request' && (format(' - {0}', inputs.env) || ' - Dev/Test/Prod') || '' }}
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+    branches: ['main']
+  workflow_dispatch:
+    inputs:
+      env:
+        description: 'Environment (dev, test, prod)'
+        required: true
+        type: choice
+        options:
+          - dev
+          - test
+          - prod
+      destroy:
+        description: 'Destroy infrastructure'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  validate:
+    name: Terraform Validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: '1.14.x'
+      - name: Terraform init
+        run: terraform init -backend=false
+        working-directory: infra
+      - name: Terraform validate
+        run: terraform validate
+        working-directory: infra
+      - name: Terraform fmt check
+        if: ${{ github.event_name == 'pull_request' }}
+        run: terraform fmt -check -recursive
+        working-directory: infra
+
+  # Deployment is skipped for PR triggers or if validation fails
+  gate:
+    name: Deployment Gate
+    needs: [validate]
+    if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Gate
+        run: echo "Deployment gate passed."
+
+  # Deploy/Destroy on workflow_dispatch to selected environment only
+  deploy:
+    name: ${{inputs.env}} - Deploy
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
+    needs: [gate]
+    uses: ./.github/workflows/tf-deploy-template.yml
+    with:
+      env: ${{ inputs.env }}
+      destroy: ${{ inputs.destroy }}
+
+  # Normal CI/CD flow for all environments
+  dev-tf:
+    name: Dev - TF Deploy
+    needs: [gate]
+    uses: ./.github/workflows/tf-deploy-template.yml
+    with:
+      env: dev
+
+  test-tf:
+    name: Test - TF Deploy
+    needs: dev-tf
+    uses: ./.github/workflows/tf-deploy-template.yml
+    with:
+      env: test
+
+  prod-tf:
+    name: Prod - TF Deploy
+    needs: test-tf
+    uses: ./.github/workflows/tf-deploy-template.yml
+    with:
+      env: prod

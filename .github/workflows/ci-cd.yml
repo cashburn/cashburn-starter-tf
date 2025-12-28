@@ -78,7 +78,7 @@ jobs:
   deploy:
     name: Deploy ${{inputs.env}}
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
-    needs: [tf-validate]
+    needs: [tf-validate, build, test]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: ${{ inputs.env }}

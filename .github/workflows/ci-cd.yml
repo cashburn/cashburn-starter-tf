@@ -53,7 +53,7 @@ jobs:
 
   # Deploy/Destroy on workflow_dispatch to selected environment only
   deploy:
-    name: ${{inputs.env}} - Deploy
+    name: Deploy ${{inputs.env}}
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
     needs: [validate]
     uses: ./.github/workflows/deploy-template.yml

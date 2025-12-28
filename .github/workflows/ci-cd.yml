@@ -17,6 +17,7 @@ on:
         required: false
         type: choice
         options:
+          - ''
           - dev
           - test
           - prod
@@ -61,11 +62,11 @@ jobs:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
 
-  # Deployment is skipped for PR triggers or if validation fails
+  # CI/CD Deployment is triggered if all validations pass and it is a push to main or a manual dispatch with no environment
   gate:
     name: Deployment Gate
     needs: [validate]
-    if: ${{ github.event_name == 'push' }}
+    if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.env == '') }}
     runs-on: ubuntu-latest
     steps:
       - name: Deployment Gate

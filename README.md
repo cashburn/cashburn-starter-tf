@@ -3,6 +3,64 @@ A template for managing Azure infrastructure with Terraform, authenticated with 
 
 There are one-time scripts provided to bootstrap the tfstate backend in Azure Blob Storage and to create the OIDC configuration using Azure Entra ID.
 
+# Acceptance Criteria
+
+## Azure
+- All infrastructure is created from code (IaC)
+- No manual Azure Portal changes are required
+- No Azure client secrets or passwords are stored in GitHub
+- Separate Azure identities (Service Principals / Entra Apps) can be used for:
+   - Non-Prod (Dev, Test, Stage, etc.)
+   - Prod
+
+## Terraform Bootstrap Script
+- A single bootstrap script can:
+  - Create all Terraform backend resources
+  - Configure OIDC federated credentials
+- The bootstrap script supports multiple non-prod environments in a single run
+  - More environments can be added later using a smaller script
+- Terraform state is stored remotely in Azure Blob Storage
+- Each environment has a separate tfstate file
+- There is a cleanup script that will delete all the resources created by the bootstrap script
+
+## Azure/Terraform
+- The same infrastructure will be deployed to all environments
+- Environment differences are controlled only via variables
+- Terraform code is not duplicated for each environment (aside from configs/tfvars)
+- Each environment is deployed into its own Resource Group
+- The Non-Prod infrastructure can be separated from the Prod infrastructure in a different Azure Tenant/Subscription
+  
+## Continuous Integration (CI)
+- CI is triggered automatically on:
+  - Pull Requests to `main` branch (will NOT trigger CD)
+  - Pushes to `main` branch
+  - Pushes to `releases/*` branches if using Release Flow (TODO)
+- CI can be triggered manually in GitHub
+- CI includes:
+  - Terraform validation
+  - Terraform format checking (only run during PR Validation)
+  - Unit Tests (TODO)
+  - Build (TODO)
+
+## Continuous Deployment (CD)
+- CD is part of the same workflow as CI
+- CD only runs if all CI checks succeed
+- CD does NOT run on PR Validation
+- CD can deploy to multiple environments
+- CD can be triggered automatically by pushes to `main` branch
+  - This should deploy to ALL environments (different if using Release Flow)
+- CD can be triggered manually via `workflow_dispatch`, and supports:
+  - Selecting just one environment to deploy
+  - Selecting a specific branch to deploy
+  - An option to destroy the infra for an environment
+- CD supports using Release Flow branching strategy (TODO)
+
+## GitHub Environment Configuration
+- Non-Environment-specific variables are stored as Repo-level environment variables (`AZURE_TENANT_ID`, etc.)
+- Repo-level environment variables can be overridden by environment-specific variables just by adding a variable for that environment (Prod can use a different `AZURE_TENANT_ID`, etc.)
+- Prod environment requires an approval
+- Only one approval per environment for all deployment steps
+
 # Steps to use this in your project
 ## Run Bootstrap Script
 This will create a Resource Group for storing the Terraform backend/tfstate in Blob Storage (NOT your application resource group), an Azure Storage Account with a tfstate container, a Microsoft Entra App and Service Principal (for authenticating from GitHub Actions using OIDC), and federated credentials for each environment name.
@@ -81,13 +139,10 @@ TODO Add Project Structure
 TODO Add Cleanup Steps
 
 # Todos
-1. Add CD code deployment
+1. Add CI Build/Test steps
 2. Try out release flow
-3. Combine CI/CD?
-4. Combine TF Plan/Apply jobs?
-5. Fix multiple approvals on TF Plan/Apply
-6. Add cleanup steps to docs
-7. Add project structure to docs
-8. Add shell script in addition to pwsh
-9. Add branch policies/rulesets
+3. Add cleanup steps to docs
+4. Add project structure to docs
+5. Add shell script in addition to pwsh
+6. Add branch policies/rulesets
    1. Add this as a separate repo, with a GH Actions workflow (triggered on push to /github folder) to auto update settings

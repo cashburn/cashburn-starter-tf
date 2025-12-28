@@ -1,0 +1,40 @@
+name: Terraform Plan
+
+on:
+  workflow_call:
+    inputs:
+      env:
+        description: 'GitHub Environment (dev, test, prod, etc.)'
+        required: true
+        type: string
+      terraform_dir:
+        required: false
+        type: string
+        default: infra
+      destroy:
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  tf:
+    name: TF Deploy
+    uses: ./.github/workflows/tf-deploy-template.yml
+    with:
+      env: ${{ inputs.env }}
+      terraform_dir: ${{ inputs.terraform_dir }}
+      destroy: ${{ inputs.destroy }}
+  deploy:
+    name: Deploy
+    needs: [tf]
+    runs-on: ubuntu-latest
+
+    environment: ${{ inputs.env }}
+
+    steps:
+      - name: Deployment Complete
+        run: echo "Deployment completed successfully."

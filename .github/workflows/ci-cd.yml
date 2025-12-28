@@ -74,44 +74,52 @@ jobs:
         run: terraform fmt -check -recursive
         working-directory: infra
 
-  # Deploy/Destroy on workflow_dispatch to selected environment only
-  deploy:
-    name: Deploy ${{inputs.env}}
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
-    needs: [tf-validate, build, test]
-    uses: ./.github/workflows/deploy-template.yml
-    with:
-      env: ${{ inputs.env }}
-      destroy: ${{ inputs.destroy }}
-
   # CI/CD Deployment is triggered if all validations pass and it is CI trigger or a manual dispatch for all envs (no env selected)
   gate:
     name: Deployment Gate
     needs: [tf-validate, build, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Gate
+        run: echo "Deployment gate passed."
+
+  cd-gate:
+    name: CD Gate (full CD deploy to all envs)
+    needs: [gate]
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.env == '') }}
     runs-on: ubuntu-latest
     steps:
       - name: Deployment Gate
         run: echo "Deployment gate passed."
 
+  # Deploy/Destroy on workflow_dispatch to selected environment only
+  deploy:
+    name: Deploy ${{inputs.env}}
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
+    needs: [gate]
+    uses: ./.github/workflows/deploy-template.yml
+    with:
+      env: ${{ inputs.env }}
+      destroy: ${{ inputs.destroy }}
+
   # Normal CI/CD flow for all environments
   dev-deploy:
     name: Dev - Deploy
-    needs: [gate]
+    needs: [cd-gate]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: dev
 
   test-deploy:
     name: Test - Deploy
-    needs: dev-deploy
+    needs: [dev-deploy]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: test
 
   prod-deploy:
     name: Prod - Deploy
-    needs: test-deploy
+    needs: [test-deploy]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: prod

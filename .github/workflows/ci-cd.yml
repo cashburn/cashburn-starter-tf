@@ -17,7 +17,7 @@ on:
         required: false
         type: choice
         options:
-          - ''
+          - '' # If no env selected, run full CI/CD workflow/deploy to all envs
           - dev
           - test
           - prod
@@ -32,7 +32,29 @@ permissions:
   contents: read
 
 jobs:
-  validate:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Replace this with actual unit test steps
+      - name: Run Unit Tests
+        run: echo "Running unit tests..."
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Replace this with actual build steps
+      - name: Build Application
+        run: echo "Building application..."
+
+  tf-validate:
     name: Terraform Validate
     runs-on: ubuntu-latest
     steps:
@@ -56,16 +78,16 @@ jobs:
   deploy:
     name: Deploy ${{inputs.env}}
     if: ${{ github.event_name == 'workflow_dispatch' && inputs.env != '' }}
-    needs: [validate]
+    needs: [tf-validate]
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
 
-  # CI/CD Deployment is triggered if all validations pass and it is a push to main or a manual dispatch with no environment
+  # CI/CD Deployment is triggered if all validations pass and it is CI trigger or a manual dispatch for all envs (no env selected)
   gate:
     name: Deployment Gate
-    needs: [validate]
+    needs: [tf-validate, build, test]
     if: ${{ github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.env == '') }}
     runs-on: ubuntu-latest
     steps:

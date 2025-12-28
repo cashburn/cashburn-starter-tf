@@ -3,7 +3,7 @@ name: CI/CD
 # PR Validation: "Build/Validate"
 # Push to main: "Deploy - Dev/Test/Prod"
 # Manual Dispatch: "Deploy - {env}" or "Destroy - {env}"
-run-name: ${{(github.event_name == 'pull_request' && 'Build/Validate') || (inputs.destroy && 'Destroy') || 'Deploy' }}${{ github.event_name != 'pull_request' && (inputs.env && format(' - {0}', inputs.env) || ' - Dev/Test/Prod') || '' }}
+run-name: ${{(github.event_name == 'pull_request' && 'Build/Validate') || (inputs.destroy && 'Destroy') || 'Deploy' }}${{ github.event_name != 'pull_request' && (inputs.env && format(' - {0}', inputs.env) || ' - All Envs') || '' }}
 
 on:
   push:
@@ -13,13 +13,14 @@ on:
   workflow_dispatch:
     inputs:
       env:
-        description: 'Environment (dev, test, prod)'
+        description: 'Environment (dev, test, stage, prod)'
         required: false
         type: choice
         options:
           - '' # If no env selected, run full CI/CD workflow/deploy to all envs
           - dev
           - test
+          - stage
           - prod
       destroy:
         description: 'Destroy infrastructure'

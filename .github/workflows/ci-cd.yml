@@ -7,9 +7,9 @@ run-name: ${{(github.event_name == 'pull_request' && 'Build/Validate') || (input
 
 on:
   push:
-    branches: ['main']
+    branches: ['main', 'releases/*']
   pull_request:
-    branches: ['main']
+    branches: ['main', 'releases/*']
   workflow_dispatch:
     inputs:
       env:
@@ -107,6 +107,7 @@ jobs:
   dev-deploy:
     name: Dev - Deploy
     needs: [cd-gate]
+    if: ${{ !startsWith(github.ref, 'refs/heads/releases/') }}
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: dev
@@ -114,6 +115,7 @@ jobs:
   test-deploy:
     name: Test - Deploy
     needs: [dev-deploy]
+    if: ${{ !startsWith(github.ref, 'refs/heads/releases/') }}
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: test
@@ -121,6 +123,7 @@ jobs:
   prod-deploy:
     name: Prod - Deploy
     needs: [test-deploy]
+    if: ${{ startsWith(github.ref, 'refs/heads/releases/') }}
     uses: ./.github/workflows/deploy-template.yml
     with:
       env: prod

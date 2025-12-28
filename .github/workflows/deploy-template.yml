@@ -1,5 +1,3 @@
-name: Terraform Plan
-
 on:
   workflow_call:
     inputs:
@@ -36,5 +34,6 @@ jobs:
     environment: ${{ inputs.env }}
 
     steps:
+      # Replace this with your deployment steps
       - name: Deployment Complete
         run: echo "Deployment completed successfully."

@@ -33,6 +33,9 @@ permissions:
   contents: read
 
 jobs:
+  # ------------------------------------
+  # CI
+  # ------------------------------------
   test:
     name: Test
     runs-on: ubuntu-latest
@@ -75,6 +78,9 @@ jobs:
         run: terraform fmt -check -recursive
         working-directory: infra
 
+  # ------------------------------------
+  # CD
+  # ------------------------------------
   # Check if all validations have passed
   gate:
     name: Deployment Gate
@@ -104,7 +110,7 @@ jobs:
       env: ${{ inputs.env }}
       destroy: ${{ inputs.destroy }}
 
-  # Normal CI/CD flow for all environments
+  # Normal CD flow for all environments
   dev-deploy:
     name: Dev - Deploy
     needs: [cd-gate]

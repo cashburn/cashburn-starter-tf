@@ -34,13 +34,13 @@ There are one-time scripts provided to bootstrap the tfstate backend in Azure Bl
 - CI is triggered automatically on:
   - Pull Requests to `main` branch (will NOT trigger CD)
   - Pushes to `main` branch
-  - Pushes to `releases/*` branches if using Release Flow (TODO)
+  - Pushes to `releases/*` branches if using Release Flow
 - CI can be triggered manually in GitHub
 - CI includes:
   - Terraform validation
   - Terraform format checking (only run during PR Validation)
-  - Unit Tests (TODO)
-  - Build (TODO)
+  - Unit Tests
+  - Build
 
 ## Continuous Deployment (CD)
 - CD is part of the same workflow as CI
@@ -48,18 +48,35 @@ There are one-time scripts provided to bootstrap the tfstate backend in Azure Bl
 - CD does NOT run on PR Validation
 - CD can deploy to multiple environments
 - CD can be triggered automatically by pushes to `main` branch
-  - This should deploy to ALL environments (different if using Release Flow)
+  - This should deploy to ALL environments (different if using [Release Flow](#release-flow))
 - CD can be triggered manually via `workflow_dispatch`, and supports:
   - Selecting just one environment to deploy
   - Selecting a specific branch to deploy
   - An option to destroy the infra for an environment
-- CD supports using Release Flow branching strategy (TODO)
+- CD supports using [Release Flow](#release-flow) branching strategy
 
 ## GitHub Environment Configuration
 - Non-Environment-specific variables are stored as Repo-level environment variables (`AZURE_TENANT_ID`, etc.)
 - Repo-level environment variables can be overridden by environment-specific variables just by adding a variable for that environment (Prod can use a different `AZURE_TENANT_ID`, etc.)
 - Prod environment requires an approval
 - Only one approval per environment for all deployment steps
+
+## Branching Strategy
+### Trunk-Based Development
+- The `main` branch is the main development branch
+- All new code is merged from a Feature Branch into `main` using a Pull Request
+- Commits into `main` are squashed to maintain a linear Git history
+
+### Release Flow
+This is *optional* and is mostly in the code as a demonstration, as [Release Flow](http://releaseflow.org/) may not be the right choice for you. It is mostly used for large projects with slower/predictable deployment timelines.
+
+To only use the `main` branch with trunk-based development, simply remove the `if` conditions from all environments in the CD workflow.
+
+To use Release Flow, in addition to the Trunk-Based Development `main` branch guidelines above:
+- CI triggers from the `main` branch deploy to Dev/Test environments (NOT Stage/Prod)
+- After reaching a release milestone and you are ready to deploy to Stage/Prod (end of a sprint, completed major features with breaking changes, etc.), create a new `releases/*` branch (ex. `releases/v10`)
+- Pushes to a Release Branch (including branch creation) trigger CI/CD for the Stage/Prod environments
+- Any additional changes in the `main` branch related to that Release must be cherry-picked from `main` to the Release Branch
 
 # Steps to use this in your project
 ## Run Bootstrap Script

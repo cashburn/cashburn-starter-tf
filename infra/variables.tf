@@ -10,9 +10,9 @@ variable "project_name" {
 ## Set this variable with the environments you want to create! ##
 variable "env" {
   type        = string
-  description = "Environment, e.g., dev, test, prod"
+  description = "Environment, ex. dev, test, prod"
   validation {
-    condition     = contains(["dev", "test", "prod"], var.env)
+    condition     = contains(["dev", "test", "stage", "prod"], var.env)
     error_message = "The environment must be one of: dev, test, prod."
   }
 }

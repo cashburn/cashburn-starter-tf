@@ -86,7 +86,7 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
    2. Also, log into the Azure Portal and make sure to go to your Subscription and register all of the Resource Providers you will need if you have not done so (this project at least uses Microsoft.Storage).
 2. Install [PowerShell](https://learn.microsoft.com/en-us/powershell/scripting/install/install-powershell)
 3. Copy `/infra` into your project
-4. Run `pwsh ./infra/boostrap-tfstate/setup.ps1` with your configured parameters for all the Non-Prod environments (this creates tfstate storage and federated credentials for ALL NPD environments at once: ex. dev, test, stage, etc).
+4. Run `pwsh ./infra/bootstrap-tfstate/setup.ps1` with your configured parameters for all the Non-Prod environments (this creates tfstate storage and federated credentials for ALL NPD environments at once: ex. dev, test, stage, etc).
    1. `TfStateResourceGroup` (Ex. `cashburn-starter-tf-tfstate-npd`) - The Azure Resource Group you would like to use for storing the Terraform backend/tfstate in Blob Storage (NOT your application resource group).
    2. `AppName` (Ex. `cashburn-starter-tf-npd`) - The name of your application to be used for the Entra App/Service Principal. It will be the same for all non-prod environments (dev, test, stage, etc). *As such, I like to call it `{YourApplicationName}-npd`*
    3. `Location` (Ex. `centralus`) - The Azure region to use for the RG/Storage Account
@@ -113,7 +113,7 @@ This will create a Resource Group for storing the Terraform backend/tfstate in B
    2. `storage_account_name` - The Storage Account you would like to use for storing the tfstate.
    3. `container_name` - The container inside the Storage Account you would like to use for storing the tfstate.
    4. `key` - The full name + environment of your application tfstate fiile, as you would like it to be stored in Azure Blob Storage.
-2. Add/remove other terraform backend environment files to `/infra/env/` if you would like (ex. `backend.stage.config`)
+2. Add/remove other terraform backend environment files in `/infra/env/` if you would like (ex. `backend.stage.config`)
 3. Configure `/infra/env/*.tfvars` to the names you want for your project.
 
 `project_name` and `env` will be concatenated (dash-separated) to create an overall env-specific application name. (Ex. "cashburn-starter-tf-dev", "cashburn-starter-tf-prod", etc.)
@@ -150,15 +150,56 @@ You typically want Prod to have its own Service Principal for security reasons, 
       2. If you used a separate Tenant or Subscription for Prod, add `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` as well
 
 # Project Structure
-TODO Add Project Structure
+```
+cashburn-starter-tf/
+├── .github/
+│   └── workflows/
+│       ├── ci-cd.yml              # CI (validate, build, test) + CD (tf plan/apply)
+|       └── deploy-template.yml    # Used by ci-cd.yml for deployment to each env. Modify this to add your deployment steps
+|
+├── .vscode/                       # Recommended VS Code settings/extensions
+│
+├── infra/
+│   ├── main.tf                    # Add your terraform resources here
+│   ├── providers.tf               # Azure + required providers
+│   ├── backend.tf                 # Backend definition (no hardcoded values, all values in env/backend.*.config)
+│   ├── variables.tf               # Input variables (env, location, app name)
+│   ├── locals.tf                  # Combines the input vars together
+│   │
+|   └── bootstrap-tfstate/
+│       ├── setup.ps1              # Azure Storage tfstate setup script (run once for all non-prod envs, once for prod)
+|       ├── setup-env.ps1          # Azure OIDC federated credential script (run for each env during setup.ps1)
+│       └── cleanup.ps1            # Delete Azure Storage resource group and Entra App/fed creds
+|
+│   └── env/
+│       ├── backend.dev.config     # tfstate backend config (dev)
+│       ├── backend.test.config    # tfstate backend config (test)
+│       ├── backend.stage.config   # tfstate backend config (stage)
+│       ├── backend.prod.config    # tfstate backend config (prod)
+│       │
+│       ├── dev.tfvars             # Environment variables (dev)
+│       ├── test.tfvars            # Environment variables (test)
+|       ├── stage.tfvars           # Environment variables (stage)
+│       └── prod.tfvars            # Environment variables (prod)
+│
+├── .editorconfig
+├── .gitignore
+└── README.md                      # You are here!
+```
 
 # Cleanup
-TODO Add Cleanup Steps
+To clean up all the resources created by the bootstrap script, there is a `cleanup.ps1` script. This deletes:
+- The tfstate Resource Group 
+- The Entra App/Service Principal (the script searches for the App Name and deletes the id associated)
+  - This includes all OIDC fed creds for all environments associated with the Entra App
 
-# Todos
-1. Try out release flow
-2. Add cleanup steps to docs
-3. Add project structure to docs
-4. Add shell script in addition to pwsh
-5. Add branch policies/rulesets
-   1. Add this as a separate repo, with a GH Actions workflow (triggered on push to /github folder) to auto update settings
+1. **Make sure to destroy all resources in each environment before running the cleanup script!**
+2. Run `pwsh ./infra/bootstrap-tfstate/cleanup.ps1` with your configured parameters for all the Non-Prod environments
+   1. `TfStateResourceGroup` (Ex. `cashburn-starter-tf-tfstate-npd`) - The Azure Resource Group you would like to use for storing the Terraform backend/tfstate in Blob Storage (NOT your application resource group).
+   2. `AppName` (Ex. `cashburn-starter-tf-npd`) - The name of your application used for the Entra App/Service Principal
+3. Run `pwsh ./infra/bootstrap-tfstate/cleanup.ps1` again for Prod (make sure to log in to your other tenant/subscription if necessary)
+
+Ex.
+```
+pwsh ./infra/bootstrap-tfstate/cleanup.ps1 -TfStateResourceGroup cashburn-starter-tf-tfstate-npd -AppName cashburn-starter-tf-npd
+```

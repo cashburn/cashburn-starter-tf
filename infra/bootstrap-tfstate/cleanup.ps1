@@ -8,8 +8,8 @@ param(
     [string]$AppName 
 )
 
-# Write-Host "Logging into Azure..."
-# az login
+Write-Host "Logging into Azure..."
+az login
 
 $subId    = az account show --query id -o tsv
 $tenantId = az account show --query tenantId -o tsv
